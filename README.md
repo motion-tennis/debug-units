@@ -13,6 +13,10 @@ Observability, reproducible experiments and trace analysis for the complete Moti
 
 The fixture is synthetic. A passing trace audit establishes only the checks implemented by the auditor, never a working or deadline-compliant game.
 
+## Start here
+
+Human and AI contributors should read [AGENTS.md](AGENTS.md), [orientation](docs/orientation.md) and the [local stage workflow](docs/workflow.md), then check the [central project status](https://github.com/motion-tennis/documentation/blob/main/docs/project-status.md). The [shared S0–S7 gates](https://github.com/motion-tennis/documentation/blob/main/docs/project-stages.md) and [task/handoff workflow](https://github.com/motion-tennis/documentation/blob/main/docs/contribution-workflow.md) govern implementation scope. Local tool availability or a passing audit does not advance the project stage.
+
 ## Responsibilities and boundaries
 
 - Preserve original timestamps, source clocks, transaction IDs, sample/frame provenance, state versions and batch identities.
@@ -50,7 +54,7 @@ The reference runtime collector is a separate process on the Windows RTX 5080 la
 
 The debug deployment also includes optional Pi/laptop pcapng capture with Wireshark tools and an independent logic analyzer for physical boundaries. Actual camera capture, pose inference, physics and game modules remain in their component repositories. Packet capture timestamps and application clocks require mapping before cross-device comparisons; no half-RTT assumption is valid.
 
-The [implementation plan](docs/implementation-plan.md) assigns the remaining collector, decoder, viewer, replay, fault and acceptance work. The canonical [master plan](https://github.com/motion-tennis/documentation/blob/main/docs/master-plan.md) governs rates, payload bounds and device responsibilities.
+The [stage workflow](docs/workflow.md) assigns when each debug capability becomes eligible; the [implementation plan](docs/implementation-plan.md) supplies its technical work packages without creating a separate sequence. The canonical [master plan](https://github.com/motion-tennis/documentation/blob/main/docs/master-plan.md) governs rates, payload bounds and device responsibilities.
 
 ## Additional IMU event markers
 
@@ -76,7 +80,10 @@ The [trace metadata contract](docs/trace-format.md#pi-reference-clock-metadata) 
 
 ```text
 README.md                       Role, actual commands and implementation status
+AGENTS.md                       Local contributor instructions and stage discipline
 LICENSE                         Existing MIT license
+docs/orientation.md            Evidence-backed entry point and current tool limits
+docs/workflow.md                Debug responsibilities under shared S0–S7 gates
 docs/trace-format.md            Normalized trace-v1 contract and audit semantics
 docs/implementation-plan.md     Remaining runtime debug environment deliverables
 scripts/check_trace.py          Runnable offline JSONL audit and metrics
