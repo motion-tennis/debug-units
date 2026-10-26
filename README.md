@@ -2,6 +2,8 @@
 
 Observability, reproducible experiments and trace analysis for the complete Motion Tennis path: ESP32 measurement, Raspberry Pi fusion/physics, Windows laptop tracking and game state, and controller feedback. Four players must remain individually identifiable even when physics batches their inputs.
 
+The [S0 contract review and first S1 handoff](docs/s0-contract-review.md) record this component's producer/consumer expectations, required fixtures and remaining evidence.
+
 ## Implementation status
 
 | Status | Capability |

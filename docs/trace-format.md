@@ -133,6 +133,28 @@ Include the applicable `message_type`, `message_id`, `batch_id`, `query_id`, `up
 
 The current auditor verifies core local measurement integrity, not mandatory stage presence, physics correctness, batch ordering, state ownership or payload schemas. Future protocol-aware audit rules must inspect these fields and the complete required ball request/response/commit path before integration is accepted.
 
+## Full-match v0.3 provenance
+
+**S0 contract definition; semantic auditing not implemented.** The [v0.3 baseline](https://github.com/motion-tennis/documentation/blob/main/docs/s0-baseline.md) adds typed match setup and atomic ball/avatar/serve/rally/score state. Record its schema/profile hashes in the run manifest and retain each installed setup's game session, writer epoch, command ID, configuration digest, roster/rules revisions and four confirmed bindings. Raw IDs follow the lossless normalization above; a digest is its full lowercase hexadecimal value, never a shortened label.
+
+Keep match evidence in ordinary trace-v1 `event` records and `details`, without inventing a new top-level record type. Each applicable query/update/commit/publication record carries the following:
+
+| Evidence | Required details |
+| --- | --- |
+| State identity | `game_session_id`, `writer_epoch`, `batch_id`, base/result state version and simulation tick; `roster_revision`, `rules_revision`, `configuration_sha256` |
+| Candidate and commit | Original candidate identity/digest, explicit accepted/rejected/unknown outcome and reason; an attempted update is never presented as committed state |
+| Per-input decisions | Complete original transaction/query key, sample/pose/association/calibration references and ordered `event_index` in the reserved decision range 0–7 |
+| Rule events | Complete `(game_session_id, writer_epoch, batch_id, event_index)` identity, with rule indices 8–23; kind, point ID, player/team, simulation tick and serve attempt |
+| Rule cause | `has_cause` and `cause_decision_index`; a false cause flag retains no invented transaction, including periodic-only events |
+| Time provenance | Original producer clock/session/time plus Pi reference session/clock and exact mapping-use references for selected IMU/pose source times |
+| Presentation | Accepted state/version and rule-event identity consumed by each team view; a skipped visual snapshot does not erase committed events |
+
+Rule events are ordered separately from per-sample decisions. Their disjoint index ranges preserve the common event-key shape without making an ordinary `MISS` a point. Identical retries/republication retain identities; conflicting content with the same identity must be reported. Rejected candidates produce no committed rule transition. Technical interruption, timeout and unavailable tracking are not sporting faults, lets or lost points.
+
+The proposed [dedicated state stream](https://github.com/motion-tennis/documentation/blob/main/docs/adr/0011-full-match-contract-and-state-stream.md) uses framed TCP, so packet segmentation, retransmission and complete application-envelope receipt are different boundaries. A TCP ACK or a partial frame is not a query response or an accepted match commit. Preserve queue/partial-frame/connection-loss evidence and declared buffer limits; diagnostic subscribers remain independent of the state writer.
+
+Future offline checks must include duplicate/conflicting rule identities, stale setup revisions, source/reference restarts, rejected or unknown commit outcomes, missing query/response links, periodic-only events and publication gaps. The current auditor retains these details without validating them; the [S0 review](s0-contract-review.md) and [implementation plan](implementation-plan.md#doubles-match-trace-work-package) identify the later conformance work.
+
 ## Additional IMU threshold markers
 
 **Agreed design:** continuous 200 Hz gameplay sampling and messages remain unchanged. A separate hardware IMU threshold interrupt adds a diagnostic event for tracing a motion/swing candidate. It creates no `transaction_start`, changes no existing sample `t0` or timeout, and does not establish a hit. **Proposed trace extension:** the named diagnostic events and linking policy below use the existing trace-v1 event/details mechanism. Emitters, viewer joins, marker integrity checks and event-latency reports are not implemented by the current auditor.
