@@ -1,0 +1,328 @@
+{
+  "reports": {
+    "marker-trace": {
+      "exit_code": 0,
+      "report": {
+        "censored_timeouts": 0,
+        "electrical_us": {
+          "count": 0,
+          "median_us": null,
+          "observed_max_us": null,
+          "p95_us": null,
+          "p99_meets_target": null,
+          "p99_us": null,
+          "target_exceedances": 0,
+          "target_us": 40000
+        },
+        "eligible_electrical_cues": 0,
+        "errors": [],
+        "event_counts": {
+          "application_response": 1,
+          "imu_threshold_trigger": 1,
+          "transaction_start": 1,
+          "trigger_link": 1
+        },
+        "gameplay_response_us": {
+          "count": 1,
+          "median_us": 20000,
+          "observed_max_us": 20000,
+          "p95_us": 20000,
+          "p99_meets_target": true,
+          "p99_us": 20000,
+          "target_exceedances": 0,
+          "target_us": 30000
+        },
+        "ineligible_electrical_cues": 1,
+        "limits": "Local trace audit only; no runtime, wire, physics, clock-mapping or hardware validation.",
+        "locally_dropped_inputs": 0,
+        "markers": {
+          "captured_markers": 1,
+          "complete_evidence": true,
+          "linked_markers": 1,
+          "missing_links": 0,
+          "target_outcomes": {
+            "miss": 1
+          },
+          "unresolved_markers": 0
+        },
+        "outcomes": {
+          "miss": 1
+        },
+        "pending_at_cutoff": 0,
+        "per_controller": {
+          "controller-1": {
+            "electrical_us": {
+              "count": 0,
+              "median_us": null,
+              "observed_max_us": null,
+              "p95_us": null,
+              "p99_meets_target": null,
+              "p99_us": null,
+              "target_exceedances": 0,
+              "target_us": 40000
+            },
+            "response_us": {
+              "count": 1,
+              "median_us": 20000,
+              "observed_max_us": 20000,
+              "p95_us": 20000,
+              "p99_meets_target": true,
+              "p99_us": 20000,
+              "target_exceedances": 0,
+              "target_us": 30000
+            },
+            "started_transactions": 1
+          }
+        },
+        "percentile_method": "median; nearest-rank p95 and p99",
+        "received_application_results": 1,
+        "reported_log_drops": 0,
+        "response_by_outcome_us": {
+          "miss": {
+            "count": 1,
+            "median_us": 20000,
+            "observed_max_us": 20000,
+            "p95_us": 20000,
+            "p99_meets_target": true,
+            "p99_us": 20000,
+            "target_exceedances": 0,
+            "target_us": 30000
+          }
+        },
+        "response_us": {
+          "count": 1,
+          "median_us": 20000,
+          "observed_max_us": 20000,
+          "p95_us": 20000,
+          "p99_meets_target": true,
+          "p99_us": 20000,
+          "target_exceedances": 0,
+          "target_us": 30000
+        },
+        "run_id": "synthetic-marker-example",
+        "source_sequence_gaps": 0,
+        "started_transactions": 1,
+        "suppressed_electrical_cues": 0,
+        "synthetic": true,
+        "valid_trace": true
+      }
+    },
+    "synthetic-trace": {
+      "exit_code": 0,
+      "report": {
+        "censored_timeouts": 1,
+        "electrical_us": {
+          "count": 2,
+          "median_us": 16000.0,
+          "observed_max_us": 21000,
+          "p95_us": 21000,
+          "p99_meets_target": true,
+          "p99_us": 21000,
+          "target_exceedances": 0,
+          "target_us": 40000
+        },
+        "eligible_electrical_cues": 2,
+        "errors": [],
+        "event_counts": {
+          "application_response": 3,
+          "ball_query_receive": 2,
+          "ball_query_send": 2,
+          "electrical_feedback": 2,
+          "fault_output": 1,
+          "input_dropped": 1,
+          "response_discarded": 1,
+          "state_commit_receive": 2,
+          "transaction_start": 5,
+          "transaction_timeout": 1
+        },
+        "gameplay_response_us": {
+          "count": 2,
+          "median_us": 26000.0,
+          "observed_max_us": 32000,
+          "p95_us": 32000,
+          "p99_meets_target": false,
+          "p99_us": 32000,
+          "target_exceedances": 1,
+          "target_us": 30000
+        },
+        "ineligible_electrical_cues": 1,
+        "limits": "Local trace audit only; no runtime, wire, physics, clock-mapping or hardware validation.",
+        "locally_dropped_inputs": 1,
+        "markers": null,
+        "outcomes": {
+          "hit": 1,
+          "local_input_drop": 1,
+          "local_timeout": 1,
+          "miss": 1,
+          "tracking_unavailable": 1
+        },
+        "pending_at_cutoff": 0,
+        "per_controller": {
+          "controller-1": {
+            "electrical_us": {
+              "count": 1,
+              "median_us": 21000,
+              "observed_max_us": 21000,
+              "p95_us": 21000,
+              "p99_meets_target": true,
+              "p99_us": 21000,
+              "target_exceedances": 0,
+              "target_us": 40000
+            },
+            "response_us": {
+              "count": 1,
+              "median_us": 20000,
+              "observed_max_us": 20000,
+              "p95_us": 20000,
+              "p99_meets_target": true,
+              "p99_us": 20000,
+              "target_exceedances": 0,
+              "target_us": 30000
+            },
+            "started_transactions": 1
+          },
+          "controller-2": {
+            "electrical_us": {
+              "count": 0,
+              "median_us": null,
+              "observed_max_us": null,
+              "p95_us": null,
+              "p99_meets_target": null,
+              "p99_us": null,
+              "target_exceedances": 0,
+              "target_us": 40000
+            },
+            "response_us": {
+              "count": 1,
+              "median_us": 32000,
+              "observed_max_us": 32000,
+              "p95_us": 32000,
+              "p99_meets_target": false,
+              "p99_us": 32000,
+              "target_exceedances": 1,
+              "target_us": 30000
+            },
+            "started_transactions": 2
+          },
+          "controller-3": {
+            "electrical_us": {
+              "count": 1,
+              "median_us": 11000,
+              "observed_max_us": 11000,
+              "p95_us": 11000,
+              "p99_meets_target": true,
+              "p99_us": 11000,
+              "target_exceedances": 0,
+              "target_us": 40000
+            },
+            "response_us": {
+              "count": 1,
+              "median_us": 10000,
+              "observed_max_us": 10000,
+              "p95_us": 10000,
+              "p99_meets_target": true,
+              "p99_us": 10000,
+              "target_exceedances": 0,
+              "target_us": 30000
+            },
+            "started_transactions": 1
+          },
+          "controller-4": {
+            "electrical_us": {
+              "count": 0,
+              "median_us": null,
+              "observed_max_us": null,
+              "p95_us": null,
+              "p99_meets_target": null,
+              "p99_us": null,
+              "target_exceedances": 0,
+              "target_us": 40000
+            },
+            "response_us": {
+              "count": 0,
+              "median_us": null,
+              "observed_max_us": null,
+              "p95_us": null,
+              "p99_meets_target": null,
+              "p99_us": null,
+              "target_exceedances": 0,
+              "target_us": 30000
+            },
+            "started_transactions": 1
+          }
+        },
+        "percentile_method": "median; nearest-rank p95 and p99",
+        "received_application_results": 3,
+        "reported_log_drops": 0,
+        "response_by_outcome_us": {
+          "hit": {
+            "count": 1,
+            "median_us": 20000,
+            "observed_max_us": 20000,
+            "p95_us": 20000,
+            "p99_meets_target": true,
+            "p99_us": 20000,
+            "target_exceedances": 0,
+            "target_us": 30000
+          },
+          "miss": {
+            "count": 1,
+            "median_us": 32000,
+            "observed_max_us": 32000,
+            "p95_us": 32000,
+            "p99_meets_target": false,
+            "p99_us": 32000,
+            "target_exceedances": 1,
+            "target_us": 30000
+          },
+          "tracking_unavailable": {
+            "count": 1,
+            "median_us": 10000,
+            "observed_max_us": 10000,
+            "p95_us": 10000,
+            "p99_meets_target": true,
+            "p99_us": 10000,
+            "target_exceedances": 0,
+            "target_us": 30000
+          }
+        },
+        "response_us": {
+          "count": 3,
+          "median_us": 20000,
+          "observed_max_us": 32000,
+          "p95_us": 32000,
+          "p99_meets_target": false,
+          "p99_us": 32000,
+          "target_exceedances": 1,
+          "target_us": 30000
+        },
+        "run_id": "synthetic-four-controller-example",
+        "source_sequence_gaps": 0,
+        "started_transactions": 5,
+        "suppressed_electrical_cues": 0,
+        "synthetic": true,
+        "valid_trace": true
+      }
+    }
+  },
+  "synthetic_only": true,
+  "validation": {
+    "date": "2026-11-08",
+    "diff_check": "passed in both repositories",
+    "documentation_check": {
+      "canonical_git_source_hashes_checked": 15,
+      "canonical_source_differences": 0,
+      "cause": "Pre-existing Windows path separator and CRLF differences in S0 evidence freshness checker",
+      "errors": 16,
+      "missing_sibling_repositories": 4,
+      "status": "failed"
+    },
+    "platform": "Windows",
+    "python": "3.12.4",
+    "unit_tests": {
+      "existing": 9,
+      "marker": 25,
+      "passed": 34
+    }
+  }
+}

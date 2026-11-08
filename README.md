@@ -8,14 +8,16 @@ The [S0 contract review and first S1 handoff](docs/s0-contract-review.md) record
 
 | Status | Capability |
 | --- | --- |
-| **Implemented** | Standard-library offline trace auditor, normalized trace-v1 documentation, synthetic JSONL fixture and integrity tests |
-| **Designed, not implemented** | Bounded runtime trace emitters, asynchronous live collector, packet decoder, timeline viewer with Pi-reference clock uncertainty, simulator/replay/fault harness, additional IMU threshold-marker correlation and run-bundle export |
+| **Implemented** | Standard-library offline trace auditor with marker-link, clock-map and pipeline conformance, normalized trace-v1 documentation, synthetic JSONL fixtures and integrity tests |
+| **Designed, not implemented** | Bounded runtime trace emitters, asynchronous live collector, packet decoder, timeline viewer with Pi-reference clock uncertainty, simulator/replay/fault harness, full-path IMU threshold-marker correlation and run-bundle export |
 | **Proposed reference profile** | Windows laptop collector; source-local buffers on ESP32/Pi/PC; asynchronous trace transport separate from gameplay; 30 ms response p99 and 40 ms eligible electrical p99 targets, 50 ms controller expiry |
 | **Not verified** | Actual packet captures, hardware timing, four-controller capacity, clock mapping, camera latency or real-time guarantees |
 
 The fixture is synthetic. A passing trace audit establishes only the checks implemented by the auditor, never a working or deadline-compliant game.
 
 ## Start here
+
+The implemented [S1 clock and pipeline profiles](docs/s1-clock-pipeline.md) add explicit map/epoch/uncertainty checks and query/commit/publication/feedback correlation, including periodic-only batches, retries and rejected candidates. Run `python -B scripts/check_trace.py examples/clock-trace.jsonl` and `python -B scripts/check_trace.py examples/pipeline-trace.jsonl`. These fixtures are synthetic; exporter adoption and hardware evidence remain open.
 
 Human and AI contributors should read [AGENTS.md](AGENTS.md), [orientation](docs/orientation.md) and the [local stage workflow](docs/workflow.md), then check the [central project status](https://github.com/motion-tennis/documentation/blob/main/docs/project-status.md). The [shared S0–S7 gates](https://github.com/motion-tennis/documentation/blob/main/docs/project-stages.md) and [task/handoff workflow](https://github.com/motion-tennis/documentation/blob/main/docs/contribution-workflow.md) govern implementation scope. Local tool availability or a passing audit does not advance the project stage.
 
@@ -66,17 +68,17 @@ Record a controller-session-scoped `trigger_id` and the ESP32-local `t_trigger`,
 
 Keep ordinary per-sample `tr - t0` and `t1 - t0` reports unchanged. Additional marker-to-associated-response and marker-to-semantic-cue measurements are separate populations, with declared endpoint rules and all unresolved markers counted. They start at the recorded IRQ boundary, not physical movement onset. See the [trace marker contract](docs/trace-format.md#additional-imu-threshold-markers) and [central marker design](https://github.com/motion-tennis/documentation/blob/main/docs/imu-trigger-markers.md).
 
-The existing offline auditor accepts diagnostic stage records under the trace format but does not validate trigger links, reconstruct complete marker paths or calculate marker latencies. These remain planned extensions; no firmware marker or sensor timing has been implemented or verified.
+The offline auditor validates explicit marker/sample links using declared source windows, capture uncertainty and identity fences. See the [implemented offline profile](docs/trace-format.md#offline-marker-conformance-profile) and [S1 handoff](docs/s1-marker-conformance.md). Full-path reconstruction and marker latency reports remain deferred; no firmware marker or sensor timing has been verified.
 
 ## Pi reference clock and uncertainty display
 
-**Agreed design, not implemented:** the Pi owns source-clock mappings into its monotonic reference timeline, including drift correction through `T_pi = a * t_source + b`. The debug tool uses the same immutable mapping ID/version as runtime processing and retains original event timestamps, source/reference sessions and all four raw clock-exchange timestamps. The Pi is the planned exchange initiator so it receives the fourth timestamp locally. See the [canonical mapping](https://github.com/motion-tennis/documentation/blob/main/docs/coordinates-and-time.md#pi-reference-clock-mapping) and [ADR 0009](https://github.com/motion-tennis/documentation/blob/main/docs/adr/0009-pi-reference-clock-mapping.md).
+**Agreed runtime design:** the Pi owns source-clock mappings into its monotonic reference timeline, including drift correction through `T_pi = a * t_source + b`. The debug tool uses the same immutable mapping ID/version as runtime processing and retains original event timestamps, source/reference sessions and all four raw clock-exchange timestamps. The Pi is the planned exchange initiator so it receives the fourth timestamp locally. See the [canonical mapping](https://github.com/motion-tennis/documentation/blob/main/docs/coordinates-and-time.md#pi-reference-clock-mapping) and [ADR 0009](https://github.com/motion-tennis/documentation/blob/main/docs/adr/0009-pi-reference-clock-mapping.md).
 
 The planned viewer shows each source's signed offset at a declared anchor, drift in ppm, last-good-exchange age, uncertainty, reference epoch, map ID and text status: `initializing`, `valid`, `uncertain`, `expired` or `invalid`. Timeline events display numeric uncertainty intervals; detail views retain raw/mapped timestamps and the components of the bound. Identifier-based causal arrows remain visible even when clocks cannot be aligned. Cross-device durations use conservative endpoint uncertainty sums; two 2 ms mapping bounds already contribute `+/- 4 ms`, before event-capture error.
 
 Unknown or invalid mapping bounds use unsynchronized local lanes and no cross-device duration claim. Overlapping intervals do not establish an exact event order. A new Pi reference epoch or controller session invalidates old mappings for live use, while earlier in-window history remains inspectable with its original map. Same-controller RTT, electrical latency and applicable marker differences remain independent of synchronization. The proposed 1 s refresh, 5 s expiry and 2 ms/source gate require validation; they are not measured guarantees.
 
-The [trace metadata contract](docs/trace-format.md#pi-reference-clock-metadata) and [implementation work package](docs/implementation-plan.md#clock-mapping-and-uncertainty-viewer-work-package) define the remaining work. The existing offline auditor does not fit clocks or check mapping validity, uncertainty propagation or the planned display.
+The [trace metadata contract](docs/trace-format.md#pi-reference-clock-metadata) and [implementation work package](docs/implementation-plan.md#clock-mapping-and-uncertainty-viewer-work-package) define the remaining work. The implemented [offline clock profile](docs/s1-clock-pipeline.md#clock-profile) checks declared map validity, epochs and uncertainty propagation. Clock fitting, actual accuracy and the live display remain unimplemented.
 
 ## Repository layout
 
@@ -97,7 +99,7 @@ tests/test_trace_audit.py       Measurement-integrity regression tests
 
 Run the audit and tests above, plus `git diff --check`. Run the central documentation checker from the documentation checkout when updating shared interfaces. The tests cover failure accounting, wrong clocks, duplicate actuation, missing terminal records, late completion, trace gaps, duplicate JSON keys and empty runs.
 
-The tool does not decode gameplay packets, collect live traces, validate complete batch/state-machine behavior or IMU marker correlation, estimate clock mappings or prove hardware timing. A source that never logs anything cannot be discovered without a future run manifest/source registry; declare expected sources when collecting real trials. The current auditor loads one file into memory and is intended for bounded fixtures and exported runs, not unlimited live ingestion.
+The tool does not decode gameplay packets, collect live traces, validate complete batch/state-machine behavior or full-path IMU marker correlation, estimate clock mappings or prove hardware timing. The marker profile detects absent registered marker sources and capture-count mismatches; general expected-producer completeness remains future work. The current auditor loads one file into memory and is intended for bounded fixtures and exported runs, not unlimited live ingestion.
 
 ## Contribution and project links
 
