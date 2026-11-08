@@ -51,6 +51,15 @@
     "documentation/tests/test_contract_evidence.py": "b3d8fdd37415c823bb57db361d00dc35859ba8327a2c9f79a749e440f1214ff3"
   },
   "date": "2026-11-08",
+  "delivery": {
+    "implementation_commits": {
+      "debug-units": "6cdb55d",
+      "documentation": "5290340"
+    },
+    "push": "blocked_by_automatic_approval_review",
+    "reason": "Public remote task-branch publication requires explicit user confirmation",
+    "status": "committed_locally"
+  },
   "fixtures": {
     "clock-trace": {
       "exit_code": 0,

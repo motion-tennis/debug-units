@@ -4,7 +4,7 @@
 
 ## Task and scope
 
-The project user authorized the remaining S1 debug checks, Windows documentation-check repair, review, commit and task-branch publication on 2026-11-08. Work continues on `task/s1-marker-conformance`, based on debug `62d4cb36498bc8f3f2496fa12c62c166efd7d046` and documentation `3260994598f492def82abba6046b8fda78257bc6`, with the existing marker changes preserved. Both remotes were fetched before continuing. S1 remains active; no later-stage exception or gate acceptance is claimed.
+The project user requested the remaining S1 debug checks, Windows documentation-check repair and completion steps on 2026-11-08. Implementation, review and local commits are complete. Automatic approval review rejected the public remote push because explicit authorization for that publication is required; no push occurred. Publication awaits that confirmation. Work continues on `task/s1-marker-conformance`, based on debug `62d4cb36498bc8f3f2496fa12c62c166efd7d046` and documentation `3260994598f492def82abba6046b8fda78257bc6`, with the existing marker changes preserved. Both remotes were fetched before continuing. S1 remains active; no later-stage exception or gate acceptance is claimed.
 
 Allowed paths: debug auditor, fixture/test/evidence files and related documentation; central freshness checker/tests and affected status/design documentation. Gameplay schema/profile and component runtimes are unchanged. Accepted v0.3 schema/profile hashes are recorded in the marker handoff. This document defines a bounded offline specialization of existing trace metadata, not a live producer contract accepted by the other repository owners.
 
@@ -65,7 +65,7 @@ git diff --check
 
 The saved [S1 conformance evidence](../evidence/s1-conformance-results.json) includes actual CLI reports, fixture SHA-256 hashes and validation results. Keep all existing marker/core tests. The Windows freshness checker now compares portable inventory paths and permits LF identities for CRLF text checkouts while still detecting substantive content changes; historical S0 evidence is unchanged.
 
-Validation on Windows: 72 debug tests and ten documentation freshness tests passed, and all four example traces exited zero. Local documentation and whitespace checks pass. The four unavailable component checkouts remain unverified skips. No runtime/device benchmark was run. Changes are delivered through the named task branches; remote `main` is reserved to the project user. The marker-only evidence file retains its historical 34-test result and the then-unfixed Windows limitation; the conformance evidence is the current result.
+Validation on Windows: 72 debug tests and ten documentation freshness tests passed, and all four example traces exited zero. Local documentation and whitespace checks pass. The four unavailable component checkouts remain unverified skips. No runtime/device benchmark was run. Changes are committed locally on the named task branches; public remote publication is pending; remote `main` is reserved to the project user. The marker-only evidence file retains its historical 34-test result and the then-unfixed Windows limitation; the conformance evidence is the current result.
 
 Repository owners can review the runnable fixtures directly:
 
