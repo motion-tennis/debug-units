@@ -10,6 +10,8 @@ import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
+from audit_extensions import audit_clocks, audit_pipeline
+
 
 U64_MAX = (1 << 64) - 1
 DECIMAL = re.compile(r"0|[1-9][0-9]*")
@@ -80,6 +82,174 @@ def distribution(values, target):
                 p99_us=p99, observed_max_us=ordered[-1],
                 target_exceedances=sum(value > target for value in ordered),
                 p99_meets_target=p99 <= target)
+
+
+def audit_markers(header, sources, transactions, loss):
+    """Validate an explicit, bounded offline marker overlay; never infer links."""
+    errors = []
+    markers = defaultdict(list)
+    links = defaultdict(list)
+    invalid = set()
+    registry = {}
+    config = header.get("marker_audit")
+    events = [event for group in sources.values() for event in group
+              if event["event"] in ("imu_threshold_trigger", "trigger_link")]
+    if config is None and not events:
+        return None, errors
+    result = {"captured_markers": 0, "linked_markers": 0,
+              "unresolved_markers": 0, "missing_links": 0,
+              "target_outcomes": {}, "complete_evidence": False}
+
+    def require(condition, message):
+        if not condition:
+            raise ValueError(message)
+
+    def interval(event):
+        detail = event["details"]
+        uncertainty = detail.get("capture_uncertainty_us")
+        if uncertainty is None:
+            require(label(detail.get("capture_uncertainty_reason")),
+                    "unknown capture uncertainty needs a reason")
+            return None
+        bound = uint(uncertainty)
+        return event["_mono_us"] - bound, event["_mono_us"] + bound
+
+    try:
+        require(isinstance(config, dict), "marker events require marker_audit metadata")
+        require(config.get("link_rule") == "first_capture_at_or_after_trigger",
+                "unsupported marker link rule")
+        require(config.get("sample_capture_boundary") == "transaction_start",
+                "marker audit requires declared transaction_start capture boundary")
+        entries = config.get("sources")
+        require(isinstance(entries, list) and bool(entries), "marker sources must be a nonempty list")
+        for entry in entries:
+            require(isinstance(entry, dict), "marker source must be an object")
+            require(all(label(entry.get(name)) for name in
+                        ("controller_id", "session_id", "clock_id")), "invalid marker source identity")
+            key = (entry["controller_id"], entry["session_id"])
+            require(key not in registry, "duplicate marker source registration")
+            begin, cutoff = uint(entry.get("observation_start_us")), uint(entry.get("observation_cutoff_us"))
+            require(begin <= cutoff, "marker observation window is reversed")
+            uint(entry.get("captured_markers"))
+            configs = entry.get("trigger_config_ids")
+            require(isinstance(configs, list) and bool(configs) and all(label(value) for value in configs),
+                    "trigger_config_ids must name known configurations")
+            registry[key] = entry
+    except ValueError as exc:
+        errors.append("markers: " + str(exc))
+        return result, errors
+
+    for event in events:
+        key = None
+        try:
+            detail = event["details"]
+            source = (event["source_id"], event["source_session_id"])
+            require(source in registry, "unknown marker source/session")
+            entry = registry[source]
+            require(event["clock_id"] == entry["clock_id"], "marker clock mismatch")
+            require(uint(entry["observation_start_us"]) <= event["_mono_us"] <=
+                    uint(entry["observation_cutoff_us"]), "marker event outside observation window")
+            require(label(detail.get("trigger_id")), "invalid trigger_id")
+            key = source + (detail["trigger_id"],)
+            if event["event"] == "imu_threshold_trigger":
+                markers[key].append(event)
+                require(event["transaction"] is None, "trigger must not create a transaction")
+                require(detail.get("trigger_config_id") in entry["trigger_config_ids"],
+                        "unknown trigger configuration")
+                require(detail.get("trigger_boundary") in ("hardware_irq_edge", "isr_entry"),
+                        "unsupported trigger capture boundary")
+                interval(event)
+                for field, expected in (("trigger_controller_id", source[0]), ("trigger_session_id", source[1])):
+                    require(field not in detail or detail[field] == expected, "trigger reference identity mismatch")
+            else:
+                require((detail.get("trigger_controller_id"), detail.get("trigger_session_id")) == source,
+                        "link marker source/session mismatch")
+                links[key].append(event)
+                require(detail.get("link_rule") == config["link_rule"], "link rule differs from manifest")
+                require(detail.get("link_status") in ("resolved", "unresolved"), "unknown link status")
+        except (ValueError, TypeError) as exc:
+            if key is not None:
+                invalid.add(key)
+            errors.append("markers: " + str(exc))
+
+    result["captured_markers"] = sum(len(group) for group in markers.values())
+    outcomes = Counter()
+    for source, entry in registry.items():
+        count = sum(len(group) for key, group in markers.items() if key[:2] == source)
+        if source not in sources or count != uint(entry["captured_markers"]):
+            errors.append("markers: missing source or captured marker count mismatch: " + "/".join(source))
+    for key in links.keys() - markers.keys():
+        errors.append("markers: link references an unknown trigger: " + "/".join(key))
+    for key, captures in markers.items():
+        prefix = "marker " + "/".join(key) + ": "
+        try:
+            require(key not in invalid, "invalid marker or link metadata")
+            require(len(captures) == 1, "duplicate trigger identity")
+            associations = links.get(key, [])
+            if not associations:
+                result["missing_links"] += 1
+            require(len(associations) == 1, "expected exactly one link; missing, duplicate or conflicting links")
+            marker, link = captures[0], associations[0]
+            detail = link["details"]
+            require(link["_mono_us"] >= marker["_mono_us"], "link precedes trigger")
+            if detail.get("link_status") == "unresolved":
+                require(link["transaction"] is None and "target_sample_id" not in detail
+                        and "target_capture_us" not in detail, "unresolved link contains an invented target")
+                require(label(detail.get("reason")), "unresolved link needs a reason")
+                result["unresolved_markers"] += 1
+                continue
+            require(detail.get("link_status") == "resolved", "invalid link status")
+            target = link["transaction"]
+            require(isinstance(target, dict), "resolved link needs a target transaction")
+            target_key = (target["controller_id"], target["session_id"], target["request_seq"])
+            require(target_key[:2] == key[:2], "target belongs to another controller/session")
+            starts = [event for event in transactions.get(target_key, []) if event["event"] == "transaction_start"]
+            require(len(starts) == 1, "unknown or ambiguous target transaction")
+            start = starts[0]
+            require(start["clock_id"] == marker["clock_id"], "target clock differs from trigger")
+            samples = start["details"].get("imu_sample_ids")
+            require(isinstance(samples, list) and len(samples) == 1 and label(samples[0])
+                    and detail.get("target_sample_id") == samples[0], "unknown or ambiguous target sample")
+            uint(samples[0])
+            require(uint(detail.get("target_capture_us")) == start["_mono_us"], "target capture provenance mismatch")
+            require(link["_mono_us"] >= start["_mono_us"], "link precedes target capture")
+            for field in ("association_id", "calibration_id"):
+                require(label(marker["details"].get(field)) and
+                        marker["details"][field] == start["details"].get(field),
+                        "missing or changed " + field)
+            trigger_range, target_range = interval(marker), interval(start)
+            require(trigger_range is not None and target_range is not None,
+                    "unknown capture timing must remain unresolved")
+            require(trigger_range[0] >= uint(registry[key[:2]]["observation_start_us"]),
+                    "trigger uncertainty exceeds observation coverage")
+            require(target_range[0] >= trigger_range[1], "ambiguous or earlier target capture")
+            require(target_range[1] <= uint(registry[key[:2]]["observation_cutoff_us"]),
+                    "target capture exceeds observation coverage")
+            candidates = [event for event in sources[key[:2]] if event["event"] == "transaction_start"
+                          and event is not start]
+            for candidate in candidates:
+                require(detail["target_sample_id"] not in candidate["details"].get("imu_sample_ids", []),
+                        "target sample identity is reused")
+                require(candidate["clock_id"] == marker["clock_id"], "sample coverage crosses clocks")
+                candidate_range = interval(candidate)
+                require(candidate_range is not None, "unknown sample capture timing must remain unresolved")
+                require(candidate_range[1] < trigger_range[0] or candidate_range[0] > target_range[1],
+                        "target is not provably the first capture; earlier or ambiguous sample")
+            require(not loss, "trace loss prevents complete first-capture proof")
+            terminals = [event for event in transactions[target_key] if event["event"] in TERMINALS]
+            outcome = "incomplete"
+            if len(terminals) == 1:
+                terminal = terminals[0]
+                outcome = {"transaction_timeout": "local_timeout", "input_dropped": "local_input_drop"}.get(
+                    terminal["event"], terminal["details"].get("outcome", "invalid"))
+            outcomes[outcome] += 1
+            result["linked_markers"] += 1
+        except (ValueError, TypeError) as exc:
+            errors.append(prefix + str(exc))
+    result["target_outcomes"] = dict(sorted(outcomes.items()))
+    result["complete_evidence"] = (not errors and not loss and result["unresolved_markers"] == 0
+                                   and "incomplete" not in outcomes)
+    return result, errors
 
 
 def audit(records):
@@ -287,6 +457,19 @@ def audit(records):
         errors.append("trace contains no started measurement transactions")
     if sequence_gaps or reported_log_drops:
         errors.append("trace evidence is incomplete: source sequence gaps or reported log loss")
+    marker_report, marker_errors = audit_markers(
+        header, sources, transactions, bool(sequence_gaps or reported_log_drops))
+    errors.extend(marker_errors)
+    valid_events = [event for group in sources.values() for event in group]
+    clock_report, clock_errors = audit_clocks(header, valid_events)
+    pipeline_report, pipeline_errors = audit_pipeline(header, valid_events)
+    errors.extend(clock_errors)
+    errors.extend(pipeline_errors)
+    for extension_report in (clock_report, pipeline_report):
+        if extension_report is not None and errors:
+            extension_report["complete_evidence"] = False
+    if marker_report is not None and errors:
+        marker_report["complete_evidence"] = False
     return {
         "run_id": header["run_id"], "synthetic": header["synthetic"],
         "valid_trace": not errors, "started_transactions": started,
@@ -313,7 +496,9 @@ def audit(records):
         "event_counts": dict(sorted(event_counts.items())),
         "source_sequence_gaps": sequence_gaps, "reported_log_drops": reported_log_drops,
         "percentile_method": "median; nearest-rank p95 and p99",
-        "limits": "Local trace audit only; no runtime, wire, physics, clock-mapping or hardware validation.",
+        "markers": marker_report,
+        "clocks": clock_report, "pipeline": pipeline_report,
+        "limits": "Offline declared trace conformance only; no runtime, wire decoding, clock fitting, physics or hardware validation.",
         "errors": errors,
     }
 

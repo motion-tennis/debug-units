@@ -22,7 +22,7 @@ The actual implementation is [scripts/check_trace.py](../scripts/check_trace.py)
 
 The checker validates normalized JSONL/header/event structure, scalar/identity conventions, producer sequence uniqueness, timestamp monotonicity within a source clock and reported evidence gaps/loss. For started controller transactions it checks source/session/clock consistency, exactly one terminal outcome, expiry and electrical cue eligibility/identity/order, including duplicate or missing actuation/suppression. It reports same-controller response/electrical distributions, target exceedances, failure outcomes, censored timeouts and local drops. A discarded old response remains diagnostic rather than creating another completed transaction.
 
-It does **not** decode Protobuf, validate mandatory pipeline-stage presence or full batch/commit behavior, correlate hardware markers, validate versioned clock maps or uncertainty, enforce doubles rules, collect live traffic or measure hardware. Arbitrary diagnostic event acceptance is not semantic validation. Missing entire producers require a future expected-source registry; the current file checker cannot discover a producer that emitted nothing. It loads a file into memory and is not an unlimited live ingestion service. Read [trace-v1](trace-format.md) before interpreting a passing report.
+The optional [clock and pipeline profiles](s1-clock-pipeline.md) validate declared map applicability/uncertainty and query/commit/publication/feedback provenance. The auditor does **not** decode Protobuf, validate complete batch state or real hardware markers, enforce doubles rules, collect live traffic or measure hardware. Arbitrary diagnostic event acceptance is not semantic validation. The optional marker profile checks declared marker sources and capture counts; general expected-producer completeness remains future work. It loads a file into memory and is not an unlimited live ingestion service. Read [trace-v1](trace-format.md) before interpreting a passing report.
 
 ## Reading order and status authority
 
@@ -34,6 +34,8 @@ It does **not** decode Protobuf, validate mandatory pipeline-stage presence or f
 Prefer these central files in an available sibling checkout; record a verified revision/status reference in the task. A missing checkout or inaccessible status is not permission to guess progress. A pinned verified status plus explicit task evidence can provide the required context as described in the contributor instructions.
 
 ## Available checks
+
+The implemented [offline marker profile](trace-format.md#offline-marker-conformance-profile) adds source/count coverage, explicit link validation and uncertainty/identity fences. Its synthetic fixture is `examples/marker-trace.jsonl`; the [S1 handoff](s1-marker-conformance.md) records evidence and remaining dependencies.
 
 From this repository root, with Python 3.9 or later:
 
